@@ -25,27 +25,27 @@ namespace MultiThreading.Task3.MatrixMultiplier.Tests
             var matricesMultiplier = new MatricesMultiplier();
             var matricesMultiplierParallel = new MatricesMultiplierParallel();
             
-            long syncExecTime = default;
-            long asyncExecTime = default;
+            double syncExecTime = default;
+            double asyncExecTime = default;
             var effectiveMatrixSize = 1;
 
-            while (syncExecTime >= asyncExecTime)
+            while (syncExecTime <= asyncExecTime)
             {
                 effectiveMatrixSize++;
 
                 var leftMatrix = new Matrix(effectiveMatrixSize, effectiveMatrixSize, true);
                 var rightMatrix = new Matrix(effectiveMatrixSize, effectiveMatrixSize, true);
 
-                var syncMultiplier = Task.Run(() => MeasureMultiplierTime(matricesMultiplier, leftMatrix, rightMatrix))
-                    .ContinueWith(syncTime => syncExecTime = syncTime.Result);
+                syncExecTime = this.MeasureMultiplierTime(matricesMultiplier, leftMatrix, rightMatrix);
 
-                var asyncMultiplier = Task.Run(() => MeasureMultiplierTime(matricesMultiplierParallel, leftMatrix, rightMatrix))
-                    .ContinueWith(asyncTime => asyncExecTime = asyncTime.Result);
+                var asyncMultiplier = Task.Run(() =>
+                    MeasureMultiplierTime(matricesMultiplierParallel, leftMatrix, rightMatrix));
 
-                Task.WaitAll(syncMultiplier, asyncMultiplier);
+                asyncExecTime = asyncMultiplier.Result;
             }
 
             Console.WriteLine($"Parallel multiplying effective from {effectiveMatrixSize}x{effectiveMatrixSize}");
+            Assert.IsTrue(true);
         }
 
         #region private methods
@@ -97,14 +97,14 @@ namespace MultiThreading.Task3.MatrixMultiplier.Tests
             Assert.AreEqual(728, multiplied.GetElement(2, 2));
         }
 
-        long MeasureMultiplierTime(IMatricesMultiplier multiplier, IMatrix leftMatrix, IMatrix rightMatrix)
+        double MeasureMultiplierTime(IMatricesMultiplier multiplier, IMatrix leftMatrix, IMatrix rightMatrix)
         {
             var stopwatch = Stopwatch.StartNew();
 
             multiplier.Multiply(leftMatrix, rightMatrix);
             stopwatch.Stop();
 
-            return stopwatch.ElapsedMilliseconds;
+            return stopwatch.Elapsed.TotalMilliseconds;
         }
 
         #endregion
