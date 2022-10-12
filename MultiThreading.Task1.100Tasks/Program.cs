@@ -21,12 +21,24 @@ namespace MultiThreading.Task1._100Tasks
             Console.WriteLine("“Task #0 – {iteration number}”.");
             Console.WriteLine();
             
-            HundredTasks();
+            var tasks = RunHundredTasks();
+
+            try
+            {
+                Task.WaitAll(tasks);
+            }
+            catch (AggregateException e)
+            {
+                foreach (var eInnerException in e.InnerExceptions)
+                {
+                    Console.WriteLine(eInnerException);
+                }
+            }
 
             Console.ReadLine();
         }
 
-        static void HundredTasks()
+        static Task[] RunHundredTasks()
         {
             var taskList = new Task[TaskAmount];
 
@@ -43,11 +55,11 @@ namespace MultiThreading.Task1._100Tasks
                     }
                 });
             }
+
+            return taskList;
         }
 
-        static void Output(int taskNumber, int iterationNumber)
-        {
+        static void Output(int taskNumber, int iterationNumber) =>
             Console.WriteLine($"Task #{taskNumber} – {iterationNumber}");
-        }
     }
 }
