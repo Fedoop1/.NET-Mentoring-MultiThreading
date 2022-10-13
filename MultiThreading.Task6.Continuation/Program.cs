@@ -7,6 +7,9 @@
    Demonstrate the work of the each case with console utility.
 */
 using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MultiThreading.Task6.Continuation
 {
@@ -22,7 +25,35 @@ namespace MultiThreading.Task6.Continuation
             Console.WriteLine("Demonstrate the work of the each case with console utility.");
             Console.WriteLine();
 
-            // feel free to add your code
+            Task a = Task.Run(() => throw new ArgumentException("Exception") { })
+                .ContinueWith(state => Console.WriteLine($"A: Parent task is faulted: {state.IsFaulted}"));
+
+            Task b = Task.Run(() => throw new ArgumentException("Exception"))
+                .ContinueWith(state => Console.WriteLine("B: Parent task executed unsuccessfully"), TaskContinuationOptions.NotOnRanToCompletion);
+
+            Task c = Task.Run(() => throw new ArgumentException($"Exception in thread {Thread.CurrentThread.ManagedThreadId}"))
+                .ContinueWith(state => Console.WriteLine($"C: Parent task executed unsuccessfully. Error: {state.Exception.Message}. Current thread {Thread.CurrentThread.ManagedThreadId}")
+            , TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
+
+            var cts = new CancellationTokenSource(1500);
+
+            Task d = Task.Run(() => { while (!cts.IsCancellationRequested) { cts.Token.ThrowIfCancellationRequested(); } }, cts.Token)
+                .ContinueWith(
+                state => Console.WriteLine(
+                    $"Parent task cancelled: {state.IsCanceled}. Continuation thread is in thread pool: {Thread.CurrentThread.IsThreadPoolThread}."),
+                TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.LongRunning);
+
+            try
+            {
+                Task.WaitAll(a, b, c, d);
+            }
+            catch (AggregateException e)
+            {
+                foreach (var exception in e.InnerExceptions)
+                {
+                    Console.WriteLine($"{exception.GetType().Name}: {exception.Message}");
+                }
+            }
 
             Console.ReadLine();
         }

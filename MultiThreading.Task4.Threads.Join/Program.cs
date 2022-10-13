@@ -10,11 +10,15 @@
  */
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MultiThreading.Task4.Threads.Join
 {
     class Program
     {
+        private static SemaphoreSlim semaphore = new SemaphoreSlim(1);
+
         static void Main(string[] args)
         {
             Console.WriteLine("4.	Write a program which recursively creates 10 threads.");
@@ -26,9 +30,44 @@ namespace MultiThreading.Task4.Threads.Join
 
             Console.WriteLine();
 
-            // feel free to add your code
+            CreateThreads(10);
+
+            Console.WriteLine(string.Empty.PadRight(20, '*'));
+
+            CreateTasks(10);
 
             Console.ReadLine();
         }
+
+        private static void CreateThreads(int number)
+        {
+            if (number == 0) return;
+
+            var thread = new Thread(() =>
+            {
+                PrintValue(--number);
+                CreateThreads(number);
+            });
+
+            thread.Start();
+            thread.Join();
+        }
+
+        private static void CreateTasks(int number)
+        {
+            if (number == 0) return;
+
+            semaphore.Wait();
+
+            Task.Run(() =>
+            {
+                PrintValue(--number);
+                CreateTasks(number);
+            });
+
+            semaphore.Release(1);
+        }
+
+        private static void PrintValue(int value) => Console.WriteLine($"Thread: {Thread.CurrentThread.ManagedThreadId}. Current value: {value}");
     }
 }
