@@ -17,7 +17,7 @@ namespace MultiThreading.Task4.Threads.Join
 {
     class Program
     {
-        private static SemaphoreSlim semaphore = new SemaphoreSlim(1);
+        private static SemaphoreSlim semaphore = new SemaphoreSlim(0, 1);
 
         static void Main(string[] args)
         {
@@ -57,15 +57,15 @@ namespace MultiThreading.Task4.Threads.Join
         {
             if (number == 0) return;
 
-            semaphore.Wait();
-
             Task.Run(() =>
             {
                 PrintValue(--number);
                 CreateTasks(number);
+
+                semaphore.Release(1);
             });
 
-            semaphore.Release(1);
+            semaphore.Wait();
         }
 
         private static void PrintValue(int value) => Console.WriteLine($"Thread: {Thread.CurrentThread.ManagedThreadId}. Current value: {value}");
